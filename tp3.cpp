@@ -110,21 +110,42 @@ float gaussian(float x, float sigma2)
     return 1.0/(2*M_PI*sigma2)*exp(-x*x/(2*sigma2));
 }
 
-/**
-    Performs a bilateral filter with the given spatial smoothing kernel 
-    and a intensity smoothing of scale sigma_r.
 
-*/
 cv::Mat bilateralFilter(cv::Mat image, cv::Mat kernel, float sigma_r)
 {
+    image.convertTo(image, CV_32F);
+    kernel.convertTo(kernel, CV_32F);
+    int k = kernel.rows;
+    int pad = k/2;
+    float sum = 0,weight;
     Mat res = image.clone();
-    /********************************************
-                YOUR CODE HERE
-    *********************************************/
-   
-    /********************************************
-                END OF YOUR CODE
-    *********************************************/
+    Mat tmp = Mat::zeros(image.rows+2*pad,image.cols+2*pad,CV_32F);   
+    cout<<k;
+
+    cout<<image.rows<<endl;
+    for(int x = 0;x<image.rows;x++){
+        for (int y=0;y<image.cols;y++){
+            tmp.at<float>(x + pad, y + pad) = image.at<float>(x, y);
+        }
+    }
+    for(int x = pad;x<tmp.rows-pad;x++){
+        for (int y=pad;y<tmp.cols-pad;y++){
+            sum = 0;
+            weight=0;
+            float center = tmp.at<float>(x, y);
+
+            for(int i = 0;i<kernel.rows;i++){
+                for (int j=0;j<kernel.cols;j++){
+                    float Gr = (1/(sqrt(2*M_PI)*sigma_r))*exp((-0.5*(tmp.at<float>(x-pad+i, y-pad+j) - center)*(tmp.at<float>(x-pad+i, y-pad+j) - center))/(sigma_r*sigma_r));
+                    sum += tmp.at<float>(x-pad+i, y-pad+j) * kernel.at<float>(i, j) * Gr;
+                    weight += kernel.at<float>(i, j) * Gr;
+                }
+            }
+            res.at<float>(x-pad,y-pad) = sum / weight;
+        }
+    }  
+
+    
     return res;
 }
 
@@ -172,6 +193,7 @@ int main(){
     Mat res = img.clone();
     imshow("image",img);
     waitKey(0);
+    
     ////QST  1
     //res = meanFilter(img,5);
     
@@ -186,6 +208,15 @@ int main(){
     ////QST  3
     //res = edgeSobel(img);
     
+    ////QST4
+    // Mat krn = (Mat_<float>(3,3) <<
+    // 1, 2, 1,
+    // 2, 4, 2,
+    // 1, 2, 1);
+    // krn /= 16.0f;
+    // res = bilateralFilter(img,krn,1.0f);
+    // res.convertTo(res,CV_8UC1);
+
     ////QST  5
     //res = median(img,3);
     
