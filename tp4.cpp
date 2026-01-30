@@ -20,7 +20,6 @@ Mat transpose(Mat image)
     return res;
 }
 
-
 float interpolate_nearest(Mat image, float x, float y)
 {
     float v=0;
@@ -39,19 +38,19 @@ float interpolate_nearest(Mat image, float x, float y)
 }
 
 
-/**
-    Compute the value of a bilinear interpolation in image Mat at position (x,y)
-*/
-float interpolate_bilinear(Mat image, float y, float x)
+
+float interpolate_bilinear(Mat image, float x, float y)
 {
     float v=0;
-    /********************************************
-                YOUR CODE HERE
-    *********************************************/
-    
-    /********************************************
-                END OF YOUR CODE
-    *********************************************/
+    int x1 = int(x),y1 = int(x), x2= int(x)+1, y2 = int(y)+1;
+    float alpha,beta;
+
+    alpha = (x - x1)/(x2 - x1);
+    beta = (y - y1)/(y2 - y1);
+
+    v = (1-alpha)*(1-beta)*(image.at<float>(x1,y1)) + (alpha)*(1-beta)*(image.at<float>(x2,y1))
+     + (1-alpha)*(beta)*(image.at<float>(x1,y2)) + (alpha)*(beta)*(image.at<float>(x2,y2));
+
     return v;
 }
 
@@ -69,31 +68,37 @@ Mat expand(Mat image, int factor, float(* interpolationFunction)(cv::Mat img, fl
         }
     }
 
-    res.convertTo(res,CV_8UC1); 
     return res;
 }
 
-/**
-    Performs a rotation of the input image with the given angle (clockwise) and the given interpolation method.
-    The center of rotation is the center of the image.
 
-    Ouput size depends of the input image size and the rotation angle.
-
-    Output pixels that map outside the input image are set to 0.
-*/
-Mat rotate(Mat image, float angle, float(* interpolationFunction)(cv::Mat image, float y, float x))
+Mat rotation(Mat image, float angle, float(* interpolationFunction)(cv::Mat image, float y, float x))
 {
-    Mat res = Mat::zeros(1,1,CV_32FC1);
-    /********************************************
-                YOUR CODE HERE
-    hint: to determine the size of the output, take
-    the bounding box of the rotated corners of the 
-    input image.
-    *********************************************/
+    int nv_x,nv_y;
+    float rad = (angle * M_PI) / 180;
+    Mat tmp;
+    image.convertTo(tmp,CV_32FC1);
+
+    int ctr_x =(tmp.rows)/2; 
+    int ctr_y = (tmp.cols)/2;
+    //bounding box (0,0) , (f,f) , (0,f) , (f,0)
+    float max_x = max( {(cos(rad) *(0-ctr_x) - sin(rad) * (0-ctr_y) + ctr_x) , (cos(rad) *((image.rows-1)-ctr_x) - sin(rad) * ((image.cols-1)-ctr_y) + ctr_x)  ,(cos(rad) *(0-ctr_x) - sin(rad) * ((image.cols-1)-ctr_y) + ctr_x) ,(cos(rad) *((image.rows-1)-ctr_x) - sin(rad) * (0-ctr_y) + ctr_x)});
+    float min_x= min( {(cos(rad) *(0-ctr_x) - sin(rad) * (0-ctr_y) + ctr_x) , (cos(rad) *((image.rows-1)-ctr_x) - sin(rad) * ((image.cols-1)-ctr_y) + ctr_x)  ,(cos(rad) *(0-ctr_x) - sin(rad) * ((image.cols-1)-ctr_y) + ctr_x) ,(cos(rad) *((image.rows-1)-ctr_x) - sin(rad) * (0-ctr_y) + ctr_x)});
+    float max_y = max({(sin(rad) *(0-ctr_x) + cos(rad) * (0-ctr_y) + ctr_y) , (sin(rad) *((image.rows-1)-ctr_x) + cos(rad) * ((image.cols-1)-ctr_y) + ctr_y)  ,(sin(rad) *(0-ctr_x) + cos(rad) * ((image.cols-1)-ctr_y) + ctr_y), (sin(rad) *((image.rows-1)-ctr_x) + cos(rad) * (0-ctr_y) + ctr_y)}) ;
+    float min_y= min({(sin(rad) *(0-ctr_x) + cos(rad) * (0-ctr_y) + ctr_y) , (sin(rad) *((image.rows-1)-ctr_x) + cos(rad) * ((image.cols-1)-ctr_y) + ctr_y)  ,(sin(rad) *(0-ctr_x) + cos(rad) * ((image.cols-1)-ctr_y) + ctr_y), (sin(rad) *((image.rows-1)-ctr_x) + cos(rad) * (0-ctr_y) + ctr_y)});
     
-    /********************************************
-                END OF YOUR CODE
-    *********************************************/
+    Mat res = Mat::zeros(int(max_x - min_x+1), int(max_y-min_y+1),CV_32F);
+
+    for(int x=0;x<tmp.rows;x++){
+        for(int y=0;y<tmp.cols;y++){
+            nv_x = cos(rad) *(x-ctr_x) - sin(rad) * (y-ctr_y) + ctr_x;
+            nv_y = sin(rad) *(x-ctr_x) + cos(rad) * (y-ctr_y) + ctr_y;
+
+            res.at<float>(nv_x -min_x,nv_y-min_y) = interpolationFunction(tmp,x,y);
+        }
+    }
+
+
     return res;
 
 }
@@ -112,12 +117,17 @@ int main(){
     // res.convertTo(res,CV_8UC1);
 
     ////QST  2
-    res = expand(img,2,interpolate_nearest);
+    // res = expand(img,2,interpolate_nearest);
+    // res.convertTo(res,CV_8UC1); 
+
 
     ////QST  3
+    // res = expand(img,2,interpolate_bilinear);
+    // res.convertTo(res,CV_8UC1); 
     
     ////QST  5
-    
+    // res = rotation(img,35.2,interpolate_nearest);
+    // res.convertTo(res,CV_8UC1); 
 
     imshow("image22",res);
     waitKey(0);
