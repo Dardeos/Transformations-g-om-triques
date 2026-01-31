@@ -16,7 +16,7 @@ cv::Mat meanFilter(cv::Mat image, int k){
     k = 2*k+1;
     int pad = k/2;
     int sum = 0;
-    Mat filt = Mat::ones(k,k,CV_8UC1) / (k*k);
+    Mat filt = Mat::ones(k,k,CV_8UC1);
     Mat res = Mat::zeros(image.rows+2*pad,image.cols+2*pad,CV_8UC1);   
     Mat tmp = res.clone(); 
 
@@ -34,7 +34,7 @@ cv::Mat meanFilter(cv::Mat image, int k){
                     sum += tmp.at<uchar>(x-pad+i, y-pad+j) * filt.at<uchar>(i, j);
                 }
             }
-            res.at<uchar>(x,y) = sum;
+            res.at<uchar>(x,y) = sum / (k*k);
         }
     }   
 
@@ -49,6 +49,7 @@ Mat convolution(Mat image, cv::Mat kernel)
     int k = kernel.rows;
     int pad = k/2;
     float sum = 0;
+    int div=0;
     Mat res = image.clone();
     Mat tmp = Mat::zeros(image.rows+2*pad,image.cols+2*pad,CV_32F);   
     cout<<k;
@@ -61,16 +62,21 @@ Mat convolution(Mat image, cv::Mat kernel)
     }
     for(int x = pad;x<tmp.rows-pad;x++){
         for (int y=pad;y<tmp.cols-pad;y++){
-            sum = 0;
+            sum = 0;div=0;
             for(int i = 0;i<kernel.rows;i++){
                 for (int j=0;j<kernel.cols;j++){
                     sum += tmp.at<float>(x-pad+i, y-pad+j) * kernel.at<float>(i, j);
+                    div +=kernel.at<float>(i, j);
                 }
             }
-            res.at<float>(x-pad,y-pad) = sum;
+            if(div==0){
+                res.at<float>(x-pad,y-pad) = sum;
+            }else{
+                res.at<float>(x-pad,y-pad) = sum/div;
+            }
+                
         }
     }  
-
     
     return res;
 }
@@ -217,7 +223,7 @@ int main(){
     // res = bilateralFilter(img,krn,1.0f);
     // res.convertTo(res,CV_8UC1);
 
-    ////QST  5
+    ////QST  5  changer l'image vers poivre et sel
     //res = median(img,3);
     
 
@@ -225,3 +231,4 @@ int main(){
     waitKey(0);
     return 0;
 }
+
